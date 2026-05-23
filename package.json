@@ -1,0 +1,17 @@
+{
+  "name": "todo-express-sqlite-api",
+  "version": "1.0.0",
+  "description": "",
+  "license": "ISC",
+  "author": "Surender Lohia <surender.lohia.e@gmail.com>",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "express": "^5.2.1",
+    "sequelize": "^6.37.8",
+    "sqlite3": "^6.0.1"
+  }
+}
