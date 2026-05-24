@@ -1,8 +1,11 @@
 const express = require('express');
+const cors = require('cors');
 const bodyParser = require('body-parser');
 const { Sequelize, Model, DataTypes } = require('sequelize');
 
 const app = express();
+// Enable CORS for all routes and origins
+app.use(cors());
 const port = 3000;
 
 // Create Sequelize instance
