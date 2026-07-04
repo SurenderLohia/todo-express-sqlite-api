@@ -8,8 +8,13 @@ const { Sequelize, Model, DataTypes } = require('sequelize');
 const pg = require('@neondatabase/serverless'); // Use the serverless driver
 
 const app = express();
+const allowedOrigins = ['http://localhost:3000', 'https://todo-webclient.vercel.app'];
 // Enable CORS for all routes and origins
-app.use(cors());
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true // Include this if you are using cookies/sessions
+}));
+
 const port = process.env.PORT || 3000; // Updated to respect Vercel's runtime environment variable
 
 const sequelize = new Sequelize(process.env.DATABASE_URL, {
