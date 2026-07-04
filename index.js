@@ -3,20 +3,25 @@ console.log("Database URL loaded:", process.env.DATABASE_URL ? "Yes âœ…" : "No â
 
 const express = require('express');
 const cors = require('cors');
-const bodyParser = require('body-parser');
 const { Sequelize, Model, DataTypes } = require('sequelize');
 const pg = require('pg');
 
 const app = express();
+
+// 1. Enable CORS for all routes immediately
 const allowedOrigins = ['http://localhost:3000', 'https://todo-webclient.vercel.app'];
-// Enable CORS for all routes and origins
 app.use(cors({
   origin: allowedOrigins,
-  credentials: true // Include this if you are using cookies/sessions
+  credentials: true 
 }));
 
-const port = process.env.PORT || 3000; // Updated to respect Vercel's runtime environment variable
+// 2. Built-in body parsing middleware (safe for Vercel serverless functions)
+app.use(express.urlencoded({ extended: false }));
+app.use(express.json());
 
+const port = process.env.PORT || 3000;
+
+// Initialize Sequelize connection pool optimized for serverless architecture
 const sequelize = new Sequelize(process.env.DATABASE_URL, {
   dialect: 'postgres',
   dialectModule: pg,
@@ -26,10 +31,10 @@ const sequelize = new Sequelize(process.env.DATABASE_URL, {
       require: true,
       rejectUnauthorized: false
     },
-    connectTimeout: 10000 // Give it 10 seconds to establish the handshake
+    connectTimeout: 10000 
   },
   pool: {
-    max: 1,        // Serverless functions should only hold 1 connection at a time
+    max: 1,        
     min: 0,
     idle: 0,
     evict: 10000,
@@ -47,12 +52,7 @@ Todo.init({
   },
 }, { sequelize, modelName: 'todo' });
 
-// Sync models with database
-sequelize.sync();
-
-// Middleware for parsing request body
-app.use(bodyParser.urlencoded({ extended: false }));
-app.use(bodyParser.json());
+// --- NOTE: sequelize.sync() was removed from global scope to prevent Vercel boot crashes ---
 
 app.get('/', (req, res) => {
   res.send('Hello World!');
@@ -60,65 +60,87 @@ app.get('/', (req, res) => {
 
 // CRUD routes for Todo model
 app.get('/todos', async (req, res) => {
-  const whereClause = {};
+  try {
+    const whereClause = {};
 
-  if(req.query.is_completed !== undefined) {
-    whereClause.is_completed = req.query.is_completed === 'true';
-  }
-
-  
-  const todos = await Todo.findAll({where: whereClause});
-  const resObject = {
-    list: todos,
-    summary: {
-      all: await Todo.count(),
-      completed: await Todo.count({ where: { is_completed: true } }),
-      pending: await Todo.count({ where: { is_completed: false } })
+    if(req.query.is_completed !== undefined) {
+      whereClause.is_completed = req.query.is_completed === 'true';
     }
+
+    // Fetch the list from the DB
+    const todos = await Todo.findAll({ where: whereClause });
+    
+    // Efficiently compute summary statistics from the fetched rows to avoid extra DB queries
+    const allCount = await Todo.count();
+    const completedCount = await Todo.count({ where: { is_completed: true } });
+    
+    const resObject = {
+      list: todos,
+      summary: {
+        all: allCount,
+        completed: completedCount,
+        pending: allCount - completedCount
+      }
+    };
+    res.json(resObject);
+  } catch (error) {
+    console.error("Error fetching todos:", error);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
-  res.json(resObject);
 });
 
 app.get('/todos/:id', async (req, res) => {
-  const todo = await Todo.findByPk(req.params.id);
-  if (todo) {
-    res.json(todo);
-  } else {
-    res.status(404).json({ error: 'Todo not found' });
+  try {
+    const todo = await Todo.findByPk(req.params.id);
+    if (todo) {
+      res.json(todo);
+    } else {
+      res.status(404).json({ error: 'Todo not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
 app.post('/todos', async (req, res) => {
-  const { text, is_completed } = req.body;
-  const todo = await Todo.create({ text, is_completed });
-  res.json(todo);
+  try {
+    const { text, is_completed } = req.body;
+    const todo = await Todo.create({ text, is_completed });
+    res.json(todo);
+  } catch (error) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
 });
 
 app.put('/todos/:id', async (req, res) => {
-  const { text, is_completed } = req.body;
-  const todo = await Todo.findByPk(req.params.id);
-  if (todo) {
-    if(text !== undefined) {
-      todo.text = text;
+  try {
+    const { text, is_completed } = req.body;
+    const todo = await Todo.findByPk(req.params.id);
+    if (todo) {
+      if(text !== undefined) todo.text = text;
+      if(is_completed !== undefined) todo.is_completed = is_completed;
+      
+      await todo.save();
+      res.json(todo);
+    } else {
+      res.status(404).json({ error: 'Todo not found' });
     }
-    if(is_completed !== undefined) {
-      todo.is_completed = is_completed;
-    }
-    
-    await todo.save();
-    res.json(todo);
-  } else {
-    res.status(404).json({ error: 'Todo not found' });
+  } catch (error) {
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
 app.delete('/todos/:id', async (req, res) => {
-  const todo = await Todo.findByPk(req.params.id);
-  if (todo) {
-    await todo.destroy();
-    res.json({ message: 'Todo deleted' });
-  } else {
-    res.status(404).json({ error: 'Todo not found' });
+  try {
+    const todo = await Todo.findByPk(req.params.id);
+    if (todo) {
+      await todo.destroy();
+      res.json({ message: 'Todo deleted' });
+    } else {
+      res.status(404).json({ error: 'Todo not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
