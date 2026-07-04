@@ -24,10 +24,6 @@ Todo.init({
   },
 }, { sequelize, modelName: 'todo' });
 
-app.get('/', (req, res) => {
-  res.send('Hello World!');
-});
-
 // Sync models with database
 sequelize.sync();
 
@@ -35,10 +31,29 @@ sequelize.sync();
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
+app.get('/', (req, res) => {
+  res.send('Hello World!');
+});
+
 // CRUD routes for Todo model
 app.get('/todos', async (req, res) => {
-  const todos = await Todo.findAll();
-  res.json(todos);
+  const whereClause = {};
+
+  if(req.query.is_completed !== undefined) {
+    whereClause.is_completed = req.query.is_completed === 'true';
+  }
+
+  
+  const todos = await Todo.findAll({where: whereClause});
+  const resObject = {
+    list: todos,
+    summary: {
+      all: await Todo.count(),
+      completed: await Todo.count({ where: { is_completed: true } }),
+      pending: await Todo.count({ where: { is_completed: false } })
+    }
+  }
+  res.json(resObject);
 });
 
 app.get('/todos/:id', async (req, res) => {
