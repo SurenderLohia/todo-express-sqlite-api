@@ -13,7 +13,7 @@ app.use(cors());
 const port = process.env.PORT || 3000; // Updated to respect Vercel's runtime environment variable
 
 const sequelize = new Sequelize(process.env.DATABASE_URL, {
-  dialect: 'postgres',
+  dialect: 'pg',
   logging: false,
   dialectOptions: {
     ssl: {
