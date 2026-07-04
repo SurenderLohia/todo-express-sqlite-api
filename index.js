@@ -1,4 +1,5 @@
 require('dotenv').config();
+console.log("Database URL loaded:", process.env.DATABASE_URL ? "Yes ✅" : "No ❌");
 
 const express = require('express');
 const cors = require('cors');
