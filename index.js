@@ -106,9 +106,12 @@ app.delete('/todos/:id', async (req, res) => {
   }
 });
 
-app.listen(port, () => {
-  console.log(`Server listening on port ${port}`);
-});
+// CRITICAL FOR VERCEL: Only start the server listening if NOT running on Vercel
+if (!process.env.VERCEL) {
+  app.listen(port, () => {
+    console.log(`Server listening on port ${port}`);
+  });
+}
 
 // CRITICAL FOR VERCEL: Export the app instance
 module.exports = app;
