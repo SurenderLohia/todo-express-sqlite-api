@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
@@ -6,12 +8,23 @@ const { Sequelize, Model, DataTypes } = require('sequelize');
 const app = express();
 // Enable CORS for all routes and origins
 app.use(cors());
-const port = 3000;
+const port = process.env.PORT || 3000; // Updated to respect Vercel's runtime environment variable
 
-// Create Sequelize instance
-const sequelize = new Sequelize({
-  dialect: 'sqlite',
-  storage: './database.sqlite'
+const url = new URL(process.env.DATABASE_URL);
+
+const sequelize = new Sequelize(url.pathname.substring(1), url.username, url.password, {
+  host: url.hostname,
+  port: url.port || 5432,
+  dialect: 'postgres',
+  logging: false,
+  dialectOptions: {
+    ssl: {
+      require: true,
+      rejectUnauthorized: false,
+      // 🚀 FORCE IDENTIFIER TO SUPABASE PROXY
+      servername: 'aws-0-ap-southeast-2.pooler.supabase.com' 
+    }
+  }
 });
 
 // Define Todo model
@@ -102,3 +115,6 @@ app.delete('/todos/:id', async (req, res) => {
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
 });
+
+// CRITICAL FOR VERCEL: Export the app instance
+module.exports = app;
