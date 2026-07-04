@@ -10,19 +10,13 @@ const app = express();
 app.use(cors());
 const port = process.env.PORT || 3000; // Updated to respect Vercel's runtime environment variable
 
-const url = new URL(process.env.DATABASE_URL);
-
-const sequelize = new Sequelize(url.pathname.substring(1), url.username, url.password, {
-  host: url.hostname,
-  port: url.port || 5432,
+const sequelize = new Sequelize(process.env.DATABASE_URL, {
   dialect: 'postgres',
   logging: false,
   dialectOptions: {
     ssl: {
       require: true,
-      rejectUnauthorized: false,
-      // 🚀 FORCE IDENTIFIER TO SUPABASE PROXY
-      servername: 'aws-0-ap-southeast-2.pooler.supabase.com' 
+      rejectUnauthorized: false
     }
   }
 });
