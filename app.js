@@ -60,10 +60,10 @@ app.put('/todos/:id', async (req, res) => {
   const { text, is_completed } = req.body;
   const todo = await Todo.findByPk(req.params.id);
   if (todo) {
-    if(todo.text) {
+    if(text !== undefined) {
       todo.text = text;
     }
-    if(todo.is_completed = is_completed !== undefined) {
+    if(is_completed !== undefined) {
       todo.is_completed = is_completed;
     }
     
