@@ -5,7 +5,7 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const { Sequelize, Model, DataTypes } = require('sequelize');
-const pg = require('@neondatabase/serverless'); // Use the serverless driver
+const pg = require('pg');
 
 const app = express();
 const allowedOrigins = ['http://localhost:3000', 'https://todo-webclient.vercel.app'];
@@ -25,7 +25,15 @@ const sequelize = new Sequelize(process.env.DATABASE_URL, {
     ssl: {
       require: true,
       rejectUnauthorized: false
-    }
+    },
+    connectTimeout: 10000 // Give it 10 seconds to establish the handshake
+  },
+  pool: {
+    max: 1,        // Serverless functions should only hold 1 connection at a time
+    min: 0,
+    idle: 0,
+    evict: 10000,
+    acquire: 20000
   }
 });
 
