@@ -5,6 +5,7 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const { Sequelize, Model, DataTypes } = require('sequelize');
+const pg = require('@neondatabase/serverless'); // Use the serverless driver
 
 const app = express();
 // Enable CORS for all routes and origins
